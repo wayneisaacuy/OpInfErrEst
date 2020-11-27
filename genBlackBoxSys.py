@@ -15,7 +15,6 @@ def genBlackBox(Sys):
     ----------
     Sys : dictionary representing a LTI system.
 
-
     Returns
     -------
     TimeStepBlackBoxSy : a function that time-steps the blackbox system if the 

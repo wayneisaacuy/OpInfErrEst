@@ -71,7 +71,6 @@ rdimList = list(range(1,9)) # list of reduced dimensions
 
 AtrueNorm = genAnorm(FOM,tsteps-1)
 AnormBnd = genAnormBnd(TimeStepBlackBoxSys,Ubasis.shape[0],N,tsteps-1,M)
-#AnormBnd = genAnormBnd(FOM,tsteps-1,M)
 
 Anorm = dict()
 Anorm['AtrueNorm'] = AtrueNorm
