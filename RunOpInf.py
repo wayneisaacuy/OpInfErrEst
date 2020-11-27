@@ -10,7 +10,7 @@ import numpy.linalg as LA
 from IntrusiveROM import *
 from OpInf import *
 
-def RunOpInf(Sys,signal,xInit,rdim,nSkip,Anorm,gamma):
+def RunOpInf(Sys,TimeStepBlackBoxSys,signal,xInit,rdim,nSkip,Anorm,gamma):
     """
     Run operator inference to generate reduced model and error estimate from data.
 
@@ -52,7 +52,7 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,Anorm,gamma):
 
     # training phase
     
-    V = genBasis(Sys,Ubasis,x0basis,rdim)
+    V = genBasisNonInt(TimeStepBlackBoxSys,Ubasis,x0basis,rdim)
     
     # intrusive approach
     
@@ -61,7 +61,7 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,Anorm,gamma):
     
     # non-intrusive approach
     
-    ReProjData = ReProj(Sys,Utrain,x0train,V,nSkip)
+    ReProjData = ReProj(TimeStepBlackBoxSys,Utrain,x0train,V,nSkip)
     NonIntROM = genNonIntROM(ReProjData)
     NonIntErrOp = genNonIntEE(ReProjData,NonIntROM,V)
     

@@ -11,6 +11,7 @@ from HeatFOMBwdEul import *
 from IntrusiveROM import *
 from OpInf import *
 from RunOpInf import *
+from genBlackBoxSys import *
 import matplotlib.pyplot as plt
 
 # set seed
@@ -22,7 +23,14 @@ random.seed(1)
 N = 133 # state dimension
 mu = 0.1 # parameter
 deltaT = 0.01 # time discretization
+
+# generate full system for intrusive model reduction
+
 FOM = genHeatFOM(N,mu,deltaT)
+
+# generate blackbox system for non-intrusive model reduction
+
+TimeStepBlackBoxSys = genBlackBox(FOM)
 
 # specify signals
 
@@ -62,7 +70,8 @@ rdimList = list(range(1,9)) # list of reduced dimensions
 # pre-compute bound and exact value for norm of powers of A
 
 AtrueNorm = genAnorm(FOM,tsteps-1)
-AnormBnd = genAnormBnd(FOM,tsteps-1,M)
+AnormBnd = genAnormBnd(TimeStepBlackBoxSys,Ubasis.shape[0],N,tsteps-1,M)
+#AnormBnd = genAnormBnd(FOM,tsteps-1,M)
 
 Anorm = dict()
 Anorm['AtrueNorm'] = AtrueNorm
@@ -79,7 +88,8 @@ NonIntErrOp = []
 for k in range(len(rdimList)):
     
     errMatrdim, IntROMdim, IntErrOpdim, NonIntROMdim, NonIntErrOpdim \
-        = RunOpInf(FOM,signal,xInit,rdimList[k],nSkip,Anorm,gamma)
+        = RunOpInf(FOM,TimeStepBlackBoxSys,signal,xInit,rdimList[k],nSkip,\
+                   Anorm,gamma)
     
     errMat.append(errMatrdim)
     IntROM.append(IntROMdim)

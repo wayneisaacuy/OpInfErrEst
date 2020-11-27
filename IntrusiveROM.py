@@ -51,7 +51,7 @@ def genAnorm(Sys,nTimes):
 
     Returns
     -------
-    AtrueNorm : array representing \|A^k\|_2 for values of k.
+    AtrueNorm : array representing the norm of \|A^k\|_2 for values of k.
 
     """
     
