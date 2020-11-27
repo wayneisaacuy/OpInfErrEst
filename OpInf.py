@@ -15,7 +15,8 @@ def genAnormBnd(TimeStepBlackBoxSys,p,N,nTimes,M):
     
     Parameters
     ----------
-    Sys : dictionary representing a LTI system.
+    TimeStepBlackBoxSys: a function to query the blackbox system for 
+                         non-intrusive model reduction.
     nTimes : length of control input.
     M : number of samples over which the maximum is computed.
 
@@ -25,14 +26,6 @@ def genAnormBnd(TimeStepBlackBoxSys,p,N,nTimes,M):
 
     """
     
-#    A = Sys['A']
-#    B = Sys['B']
-#    
-#    p = B.shape[1]
-#    N = A.shape[0]
-    
-    # non-intrusive
-    
     signal = np.zeros((p,nTimes))
     ThetaNormSamples = np.zeros((M,nTimes))
     
@@ -40,7 +33,7 @@ def genAnormBnd(TimeStepBlackBoxSys,p,N,nTimes,M):
     
     GaussianInit = np.random.normal(0, 1, size = (N, M))
     
-    # Query system at Gaussian initial condition and zero input
+    # Query the blackbox system at Gaussian initial condition and zero input
     
     for k in range(M):
         XTraj = TimeStepBlackBoxSys(signal,GaussianInit[:,k:k+1])
@@ -54,61 +47,15 @@ def genAnormBnd(TimeStepBlackBoxSys,p,N,nTimes,M):
     AnormBnd = AnormBnd.reshape(1,-1)
     
     return AnormBnd
-
-#def genAnormBnd(Sys,nTimes,M):
-#    """
-#    Generate realization of probabilistic bound for \|A^k\|_2 (AnormBnd)
-#    without gamma scaling (refer to paper for definition). 
-#    
-#    Parameters
-#    ----------
-#    Sys : dictionary representing a LTI system.
-#    nTimes : length of control input.
-#    M : number of samples over which the maximum is computed.
-#
-#    Returns
-#    -------
-#    AnormBnd : array representing the bound on \|A^k\|_2 for values of k.
-#
-#    """
-#    
-#    A = Sys['A']
-#    B = Sys['B']
-#    
-#    p = B.shape[1]
-#    N = A.shape[0]
-#    
-#    # non-intrusive
-#    
-#    signal = np.zeros((p,nTimes))
-#    ThetaNormSamples = np.zeros((M,nTimes))
-#    
-#    # Gaussian initial condition
-#    
-#    GaussianInit = np.random.normal(0, 1, size = (N, M))
-#    
-#    # Query system at Gaussian initial condition and zero input
-#    
-#    for k in range(M):
-#        XTraj = TimeStepSys(Sys, signal, GaussianInit[:,k:k+1])
-#        XTraj = XTraj[:,1:]
-#        NormTraj = LA.norm(XTraj, axis = 0)
-#        ThetaNormSamples[k:k+1,:] = NormTraj
-#    
-#    # Compute maximum among samples
-#    
-#    AnormBnd = np.amax(ThetaNormSamples, axis = 0)
-#    AnormBnd = AnormBnd.reshape(1,-1)
-#    
-#    return AnormBnd
     
 def genBasisNonInt(TimeStepBlackBoxSys,signal,xInit,rdim):    
     """
-    Generate basis matrix via POD.
+    Generate basis matrix via POD for non-intrusive model reduction.
     
     Parameters
     ----------
-    Sys : dictionary representing a LTI system.
+    TimeStepBlackBoxSys: a function to query the blackbox system for 
+                         non-intrusive model reduction.
     signal : 2-d array for control input.
     xInit : array for initial condition.
     rdim : reduced dimension.
@@ -119,6 +66,7 @@ def genBasisNonInt(TimeStepBlackBoxSys,signal,xInit,rdim):
 
     """
     
+    # query the blackbox system
     XTraj = TimeStepBlackBoxSys(signal, xInit)
     
     # compute svd
@@ -134,7 +82,8 @@ def ReProj(TimeStepBlackBoxSys,signal,xInit,V,nSkip):
 
     Parameters
     ----------
-    Sys : dictionary representing a LTI system.
+    TimeStepBlackBoxSys: a function to query the blackbox system for 
+                         non-intrusive model reduction.
     signal : 2-d array for control input.
     xInit : array for initial condition.
     V : basis matrix whose columns are basis vectors.
@@ -149,10 +98,8 @@ def ReProj(TimeStepBlackBoxSys,signal,xInit,V,nSkip):
                 residual norm.
 
     """
-#    A = Sys['A']
-#    B = Sys['B']
     
-    # simulate the full system
+    # query the blackbox system
     XTraj = TimeStepBlackBoxSys(signal,xInit)
     
     # pick states at which to perform re-projection for 1 step
@@ -168,10 +115,9 @@ def ReProj(TimeStepBlackBoxSys,signal,xInit,V,nSkip):
     residNorm = np.zeros((1,nInit))
     
     for k in range(nInit):
-        # query system for 1 time step
+        # query the blackbox system for 1 time step
         xtmp = TimeStepBlackBoxSys(ureProj[:,k:k+1], V @ XreProjInit[:,k:k+1])
         xtmp = xtmp[:,1:2]
-        #xtmp = A @ V @ XreProjInit[:,k:k+1] + B @ ureProj[:,k:k+1]
         # project
         XreProjNextStep[:,k:k+1] = V.T @ xtmp
         # compute residual
@@ -184,61 +130,6 @@ def ReProj(TimeStepBlackBoxSys,signal,xInit,V,nSkip):
     ReProjData['residNorm'] = residNorm 
     
     return ReProjData
-
-#def ReProj(Sys,signal,xInit,V,nSkip):
-#    """
-#    Perform re-projection to obtain data for operator inference.
-#
-#    Parameters
-#    ----------
-#    Sys : dictionary representing a LTI system.
-#    signal : 2-d array for control input.
-#    xInit : array for initial condition.
-#    V : basis matrix whose columns are basis vectors.
-#    nSkip : number of states to skip for re-projection.
-#
-#    Returns
-#    -------
-#    ReProjData: dictionary with keys 'XreProjInit', 'XreProjNextStep', 
-#                'ureProj', 'residNorm'. 'XreProjNextStep' are the states 
-#                resulting from performing re-projection for 1 time step at 
-#                'XreprojInit' with input 'ureProj'. 'residNorm' is the associated
-#                residual norm.
-#
-#    """
-#    A = Sys['A']
-#    B = Sys['B']
-#    
-#    # simulate the full system
-#    XTraj = TimeStepSys(Sys,signal,xInit)
-#    
-#    # pick states at which to perform re-projection for 1 step
-#    XInit = XTraj[:,:-1:nSkip]
-#    ureProj = signal[:,::nSkip]
-#    
-#    if XInit.shape[1] <= 1:
-#        raise Exception('Insufficient data for re-projection. Reduce skip size.')
-#    
-#    nInit = XInit.shape[1]
-#    XreProjInit = V.T @ XInit
-#    XreProjNextStep = np.zeros_like(XreProjInit)
-#    residNorm = np.zeros((1,nInit))
-#    
-#    for k in range(nInit):
-#        # query system for 1 time step
-#        xtmp = A @ V @ XreProjInit[:,k:k+1] + B @ ureProj[:,k:k+1]
-#        # project
-#        XreProjNextStep[:,k:k+1] = V.T @ xtmp
-#        # compute residual
-#        residNorm[:,k:k+1] = LA.norm(xtmp - V @ XreProjNextStep[:,k:k+1])
-#    
-#    ReProjData = dict()
-#    ReProjData['XreProjInit'] = XreProjInit
-#    ReProjData['XreProjNextStep'] = XreProjNextStep
-#    ReProjData['ureProj'] = ureProj
-#    ReProjData['residNorm'] = residNorm 
-#    
-#    return ReProjData
 
 def genNonIntROM(ReProjData):
     """

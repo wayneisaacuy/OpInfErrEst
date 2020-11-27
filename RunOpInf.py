@@ -17,8 +17,10 @@ def RunOpInf(Sys,TimeStepBlackBoxSys,signal,xInit,rdim,nSkip,Anorm,gamma):
     Parameters
     ----------
     Sys : dictionary representing a LTI system.
+    TimeStepBlackBoxSys: a function to query the blackbox system for 
+                         non-intrusive model reduction.
     signal : dictionary with keys 'Ubasis', 'Utrain', 'Utest' 
-            representing the control inputs. 
+             representing the control inputs. 
     xInit : dictionary with keys 'x0basis', 'x0train', 'x0test' representing 
             the initial condition.
     rdim : reduced dimension.
