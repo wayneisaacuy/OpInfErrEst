@@ -8,9 +8,8 @@ Author: Wayne Isaac Tan Uy, PhD
 import random
 import numpy as np
 from HeatFOMBwdEul import *
-from ROMhelper import *
+from IntrusiveROM import *
 from OpInf import *
-from AnormBnd import *
 from RunOpInf import *
 import matplotlib.pyplot as plt
 
@@ -60,23 +59,40 @@ M = 25 # parameter in probabilistic error estimation
 gamma = 1 # parameter in probabilistic error estimation
 rdimList = list(range(1,9)) # list of reduced dimensions
 
-# pre-compute bound for norm of powers of A
+# pre-compute bound and exact value for norm of powers of A
 
+AtrueNorm = genAnorm(FOM,tsteps-1)
 AnormBnd = genAnormBnd(FOM,tsteps-1,M)
+
+Anorm = dict()
+Anorm['AtrueNorm'] = AtrueNorm
+Anorm['AnormBnd'] = AnormBnd
 
 # run operator inference
 
 errMat = []
+IntROM = []
+IntErrOp = []
+NonIntROM = []
+NonIntErrOp = []
 
 for k in range(len(rdimList)):
     
-    errMatrdim = RunOpInf(FOM,signal,xInit,rdimList[k],nSkip,AnormBnd,gamma)
+    errMatrdim, IntROMdim, IntErrOpdim, NonIntROMdim, NonIntErrOpdim \
+        = RunOpInf(FOM,signal,xInit,rdimList[k],nSkip,Anorm,gamma)
+    
     errMat.append(errMatrdim)
+    IntROM.append(IntROMdim)
+    IntErrOp.append(IntErrOpdim)
+    NonIntROM.append(NonIntROMdim)
+    NonIntErrOp.append(NonIntErrOpdim)
 
 errMat = np.array(errMat)
 errMat = errMat.T
     
 # plot results
+
+# relative average error
 
 fig, ax = plt.subplots()
 ax.plot(rdimList, errMat[0,:], marker='o', label = 'Operator inference error')
@@ -86,6 +102,20 @@ ax.plot(rdimList, errMat[2,:], marker ='v', label = 'Learned error estimate')
 ax.set_yscale("log")
 ax.legend()
 ax.set(xlabel='reduced dimension', ylabel='rel ave state err over time',
+       title='Heat equation example')
+ax.grid()
+
+plt.show()
+
+# residual norm average
+
+fig, ax = plt.subplots()
+ax.plot(rdimList, errMat[3,:], marker='s', label = 'intrusive model reduction')
+ax.plot(rdimList, errMat[4,:], marker='v', label = 'operator inference')
+
+ax.set_yscale("log")
+ax.legend()
+ax.set(xlabel='reduced dimension', ylabel='ave residual norm over time',
        title='Heat equation example')
 ax.grid()
 

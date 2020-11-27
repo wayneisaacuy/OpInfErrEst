@@ -7,7 +7,7 @@ Author: Wayne Isaac Tan Uy, PhD
 
 import numpy as np
 import numpy.linalg as LA
-from ROMhelper import *
+from IntrusiveROM import *
 
 def genAnormBnd(Sys,nTimes,M):
     """

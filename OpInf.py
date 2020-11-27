@@ -7,7 +7,54 @@ Author: Wayne Isaac Tan Uy, PhD
 
 import numpy as np
 import numpy.linalg as LA 
-from ROMhelper import *
+from IntrusiveROM import *
+
+def genAnormBnd(Sys,nTimes,M):
+    """
+    Generate realization of probabilistic bound for \|A^k\|_2 (AnormBnd)
+    without gamma scaling (refer to paper for definition). 
+    
+    Parameters
+    ----------
+    Sys : dictionary representing a LTI system.
+    nTimes : length of control input.
+    M : number of samples over which the maximum is computed.
+
+    Returns
+    -------
+    AnormBnd : array representing the bound on \|A^k\|_2 for values of k.
+
+    """
+    
+    A = Sys['A']
+    B = Sys['B']
+    
+    p = B.shape[1]
+    N = A.shape[0]
+    
+    # non-intrusive
+    
+    signal = np.zeros((p,nTimes))
+    ThetaNormSamples = np.zeros((M,nTimes))
+    
+    # Gaussian initial condition
+    
+    GaussianInit = np.random.normal(0, 1, size = (N, M))
+    
+    # Query system at Gaussian initial condition and zero input
+    
+    for k in range(M):
+        XTraj = TimeStepSys(Sys, signal, GaussianInit[:,k:k+1])
+        XTraj = XTraj[:,1:]
+        NormTraj = LA.norm(XTraj, axis = 0)
+        ThetaNormSamples[k:k+1,:] = NormTraj
+    
+    # Compute maximum among samples
+    
+    AnormBnd = np.amax(ThetaNormSamples, axis = 0)
+    AnormBnd = AnormBnd.reshape(1,-1)
+    
+    return AnormBnd
 
 def ReProj(Sys,signal,xInit,V,nSkip):
     """

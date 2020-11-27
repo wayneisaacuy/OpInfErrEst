@@ -7,10 +7,10 @@ Author: Wayne Isaac Tan Uy, PhD
 
 import numpy as np
 import numpy.linalg as LA
-from ROMhelper import *
+from IntrusiveROM import *
 from OpInf import *
 
-def RunOpInf(Sys,signal,xInit,rdim,nSkip,AnormBnd,gamma):
+def RunOpInf(Sys,signal,xInit,rdim,nSkip,Anorm,gamma):
     """
     Run operator inference to generate reduced model and error estimate from data.
 
@@ -23,14 +23,18 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,AnormBnd,gamma):
             the initial condition.
     rdim : reduced dimension.
     nSkip : number of states to skip in re-projection algorithm.
-    AnormBnd : dictionary representing bounds for \|A^k\|_2.
+    Anorm : dictionary representing exact value or bounds for \|A^k\|_2.
     gamma : Tparameter in estimating upper bound for \|A^k\|_2.
 
     Returns
     -------
     errMat : array of length 3 measuring error of reduced model, intrusive 
              error estimate and non-intrusive error estimate.
-
+    IntROM : dictionary representing the intrusive reduced system.
+    IntErrOp: dictionary representing the intrusive error operators.
+    NonIntROM: dictionary representing the non-intrusive reduced system.
+    NonIntErrOp: dictionary representing the non-intrusive error operators.
+     
     """
     
     # unpack system
@@ -41,10 +45,10 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,AnormBnd,gamma):
     x0basis = xInit['x0basis']
     x0train = xInit['x0train']
     x0test = xInit['x0test']
-    AtrueNorm = AnormBnd['AtrueNorm']
-    XiSample = AnormBnd['XiSample']
+    AtrueNorm = Anorm['AtrueNorm']
+    AnormBnd = Anorm['AnormBnd']
     AtrueNorm = np.flip(AtrueNorm, axis = 1)
-    XiSample = (gamma ** 0.5) * np.flip(XiSample, axis = 1)
+    AnormBnd = (gamma ** 0.5) * np.flip(AnormBnd, axis = 1)
 
     # training phase
     
@@ -81,7 +85,7 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,AnormBnd,gamma):
     XrNonIntTrajTest = TimeStepSys(NonIntROM,Utest,V.T @ x0test)
     XrNonIntErr = LA.norm(XTrajTest - V @ XrNonIntTrajTest, axis = 0)
     ResidNormTrajNonInt = computeResidNormTraj(NonIntROM,NonIntErrOp,XrNonIntTrajTest,Utest)
-    NonIntErrBndTmp = XiSample * ResidNormTrajNonInt
+    NonIntErrBndTmp = AnormBnd * ResidNormTrajNonInt
     NonIntErrBndTmp = np.hstack((np.array([[0]]), NonIntErrBndTmp))
     NonIntErrBnd = np.cumsum(NonIntErrBndTmp)[None,:]
     
@@ -90,7 +94,9 @@ def RunOpInf(Sys,signal,xInit,rdim,nSkip,AnormBnd,gamma):
     IntErrRelAve = np.sum(XrIntErr)/(nTestSteps * np.sum(XTrajTestNorm))
     IntErrBndRelAve =  np.sum(IntErrBnd)/(nTestSteps * np.sum(XTrajTestNorm))
     NonIntErrBndRelAve = np.sum(NonIntErrBnd)/(nTestSteps * np.sum(XTrajTestNorm))
+    IntResidNormAve = np.sum(ResidNormTrajInt)/nTestSteps
+    NonIntResidNormAve = np.sum(ResidNormTrajNonInt)/nTestSteps
     
-    errMat = np.array([IntErrRelAve, IntErrBndRelAve, NonIntErrBndRelAve])
+    errMat = np.array([IntErrRelAve, IntErrBndRelAve, NonIntErrBndRelAve, IntResidNormAve, NonIntResidNormAve])
     
-    return errMat
+    return errMat, IntROM, IntErrOp, NonIntROM, NonIntErrOp

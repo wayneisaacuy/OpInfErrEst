@@ -39,7 +39,35 @@ def TimeStepSys(Sys,signal,xInit):
         XTraj[:,k+1:k+2] = A @ XTraj[:,k:k+1] + B @ signal[:,k:k+1]
     
     return XTraj
+
+def genAnorm(Sys,nTimes):
+    """
+    Compute exact value of \|A^k\|_2 (AtrueNorm) for intrusive approach.
+
+    Parameters
+    ----------
+    Sys : dictionary representing a LTI system.
+    nTimes : length of control input.
+
+    Returns
+    -------
+    AtrueNorm : array representing \|A^k\|_2 for values of k.
+
+    """
     
+    A = Sys['A']
+    AtrueNorm = np.zeros((1,nTimes))
+    
+    # compute true norm of powers of A
+    
+    tempA = A
+    
+    for k in range(nTimes):
+        AtrueNorm[:,k:k+1] = LA.norm(tempA, ord = 2)
+        tempA = A @ tempA
+    
+    return AtrueNorm
+
 def genBasis(Sys,signal,xInit,rdim):    
     """
     Generate basis matrix via POD.
